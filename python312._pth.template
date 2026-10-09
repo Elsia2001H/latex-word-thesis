@@ -1,0 +1,6 @@
+.
+Lib
+Lib/site-packages
+DLLs
+../program
+import site
