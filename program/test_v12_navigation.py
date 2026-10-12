@@ -6,7 +6,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.enum.style import WD_STYLE_TYPE
 from postprocess_thesis_docx import move_bibliography
-from finalize_word_layout import format_cached_toc, format_linked_citations
+from finalize_word_layout import format_cached_toc, format_linked_citations, format_heading_fonts
 
 class NavigationTests(unittest.TestCase):
     def test_linked_citation_brackets_and_digits_remain_superscript(self):
@@ -37,5 +37,25 @@ class NavigationTests(unittest.TestCase):
         self.assertEqual(r[0].xpath('./w:rPr/w:rFonts/@w:eastAsia'),['SimHei'])
         self.assertEqual(r[0].xpath('./w:rPr/w:b/@w:val'),['1'])
         self.assertEqual(r[-1].xpath('./w:rPr/w:b/@w:val'),['0'])
+        self.assertEqual(r[0].xpath('./w:rPr/w:sz/@w:val'),['28'])
+
+    def test_lower_toc_levels_are_twelve_points(self):
+        d=Document()
+        for level in (2,3):
+            s=d.styles.add_style('TOC '+str(level),WD_STYLE_TYPE.PARAGRAPH)
+            p=d.add_paragraph(style=s);p.add_run('测试');p.add_run().add_tab();p.add_run('1')
+        with TemporaryDirectory() as folder:
+            path=Path(folder)/'toc.docx';d.save(path);format_cached_toc(path);d=Document(path)
+        for p in d.paragraphs:
+            self.assertTrue(all(r.xpath('./w:rPr/w:sz/@w:val')==['24'] for r in p._p.xpath('./w:r')))
+
+    def test_heading_theme_cannot_override_black_font(self):
+        d=Document();p=d.add_paragraph('第一章 测试',style='Heading 1')
+        p.add_run('标题')._r.get_or_add_rPr().get_or_add_rFonts().set(qn('w:eastAsiaTheme'),'majorEastAsia')
+        format_heading_fonts(d)
+        self.assertEqual(d.styles['Heading 1'].element.xpath('./w:rPr/w:rFonts/@w:eastAsia'),['SimHei'])
+        self.assertFalse(d.styles['Heading 1'].element.xpath('./w:rPr/w:rFonts/@w:eastAsiaTheme'))
+        self.assertTrue(all(r.xpath('./w:rPr/w:rFonts/@w:eastAsia')==['SimHei'] for r in p._p.xpath('./w:r')))
+        self.assertFalse(p._p.xpath('.//w:rFonts/@w:eastAsiaTheme'))
 
 if __name__=='__main__':unittest.main()

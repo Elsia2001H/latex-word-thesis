@@ -30,6 +30,9 @@ def set_east_asian_font(style, chinese: str, western: str) -> None:
     r_fonts.set(qn("w:ascii"), western)
     r_fonts.set(qn("w:hAnsi"), western)
     r_fonts.set(qn("w:eastAsia"), chinese)
+    # Theme attributes take precedence over explicit fonts in desktop Word.
+    for attr in ("asciiTheme", "hAnsiTheme", "eastAsiaTheme"):
+        r_fonts.attrib.pop(qn("w:" + attr), None)
 
 
 def calibrate(path: Path) -> None:
@@ -79,6 +82,12 @@ def calibrate(path: Path) -> None:
         style.font.color.rgb = RGBColor(0, 0, 0)
         style.paragraph_format.alignment = alignment
         style.paragraph_format.keep_with_next = True
+
+    for style in document.styles:
+        if style.name.lower().replace(" ", "") in {"toc" + str(i) for i in range(1, 10)}:
+            first = style.name.lower().replace(" ", "") == "toc1"
+            set_east_asian_font(style, "SimHei" if first else "SimSun", "Times New Roman")
+            style.font.size = Pt(14 if first else 12)
 
     for style_name in ("Hyperlink", "FollowedHyperlink"):
         try:

@@ -64,8 +64,13 @@
 \AtBeginDocument{\renewcommand*{\l@chapter}[2]{%
   \ifnum\c@tocdepth>\m@ne
     \addpenalty{-\@highpenalty}\vskip 0pt\@plus\p@
-    {\heiti\bfseries\@dottedtocline{0}{0pt}{4em}{#1}{{\songti\mdseries #2}}}%
+    {\zihao{4}\heiti\bfseries\@dottedtocline{0}{0pt}{4em}{#1}{{\songti\mdseries #2}}}%
   \fi}}
+\AtBeginDocument{%
+  \let\ThesisTOCSection\l@section
+  \let\ThesisTOCSubsection\l@subsection
+  \renewcommand*{\l@section}[2]{{\zihao{-4}\ThesisTOCSection{#1}{#2}}}%
+  \renewcommand*{\l@subsection}[2]{{\zihao{-4}\ThesisTOCSubsection{#1}{#2}}}}
 \makeatother
 
 \fancypagestyle{thesis}{

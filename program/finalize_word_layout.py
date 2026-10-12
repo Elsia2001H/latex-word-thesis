@@ -183,8 +183,28 @@ def format_three_line_table(table) -> None:
     table.rows[-1].cells[-1].paragraphs[-1].paragraph_format.keep_with_next = False
 
 
+def format_heading_fonts(document) -> None:
+    """Keep chapter/section headings on explicit fonts, not Word themes."""
+    from calibrate_reference_docx import set_east_asian_font
+    names = {"Heading 1", "Heading 2", "Heading 3"}
+    for name in names:
+        if name in document.styles:
+            set_east_asian_font(document.styles[name], "SimHei", "Times New Roman")
+    for paragraph in document.paragraphs:
+        if paragraph.style.name not in names:
+            continue
+        for run in paragraph._p.xpath(".//w:r"):
+            fonts = run.get_or_add_rPr().get_or_add_rFonts()
+            for attr in ("asciiTheme", "hAnsiTheme", "eastAsiaTheme"):
+                fonts.attrib.pop(qn("w:" + attr), None)
+            fonts.set(qn("w:eastAsia"), "SimHei")
+            fonts.set(qn("w:ascii"), "Times New Roman")
+            fonts.set(qn("w:hAnsi"), "Times New Roman")
+
+
 def fix_document(path: Path) -> None:
     document = Document(path)
+    format_heading_fonts(document)
     # Pandoc may inject FirstParagraph with eastAsia=Times New Roman even
     # when Normal is SimSun. That makes mixed-script runs behave like long
     # Western words, causing premature wraps and huge justified spaces.
@@ -470,8 +490,28 @@ def fix_document(path: Path) -> None:
 def format_cached_toc(path: Path) -> None:
     """Format real TOC field results after Word has regenerated them."""
     document = Document(path)
+    format_heading_fonts(document)
+    from calibrate_reference_docx import set_east_asian_font
     for paragraph in document.paragraphs:
-        if paragraph.style.style_id != "TOC1":
+        level = paragraph.style.name.lower().replace(" ", "")
+        if level not in {"toc" + str(i) for i in range(1, 10)}:
+            continue
+        size = 28 if level == "toc1" else 24
+        paragraph.style.font.size = Pt(size / 2)
+        set_east_asian_font(paragraph.style, "SimHei" if level == "toc1" else "SimSun", "Times New Roman")
+        mark = paragraph._p.get_or_add_pPr().find(qn("w:rPr"))
+        if mark is None:
+            mark = OxmlElement("w:rPr")
+            paragraph._p.get_or_add_pPr().append(mark)
+        properties = [mark] + [run.get_or_add_rPr() for run in paragraph._p.xpath(".//w:r")]
+        for rpr in properties:
+            for tag in ("sz", "szCs"):
+                node = rpr.find(qn("w:" + tag))
+                if node is None:
+                    node = OxmlElement("w:" + tag)
+                    rpr.append(node)
+                node.set(qn("w:val"), str(size))
+        if level != "toc1":
             continue
         paragraph.style.font.bold = True
         paragraph.style.font.name = "Times New Roman"
@@ -485,6 +525,8 @@ def format_cached_toc(path: Path) -> None:
                 bold_value = "0" if after_tab else "1"
             rpr = run.get_or_add_rPr()
             fonts = rpr.get_or_add_rFonts()
+            for attr in ("asciiTheme", "hAnsiTheme", "eastAsiaTheme"):
+                fonts.attrib.pop(qn("w:" + attr), None)
             fonts.set(qn("w:eastAsia"), "SimSun" if after_tab and not run.xpath("./w:tab") else "SimHei")
             fonts.set(qn("w:ascii"), "Times New Roman")
             fonts.set(qn("w:hAnsi"), "Times New Roman")
