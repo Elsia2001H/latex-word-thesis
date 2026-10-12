@@ -237,6 +237,16 @@ def move_bibliography(doc):
     target._p.addprevious(hnode)
     for entry in entries:
         node = entry._p
+        # Pandoc places bibliography bookmarks outside the paragraph. Move
+        # each paired reference bookmark inside its entry before relocation.
+        previous = node.getprevious()
+        if previous is not None and previous.tag == qn("w:bookmarkStart") and previous.get(qn("w:name"), "").startswith("ref-"):
+            bookmark_id = previous.get(qn("w:id"))
+            ending = node.getnext()
+            if ending is None or ending.tag != qn("w:bookmarkEnd") or ending.get(qn("w:id")) != bookmark_id:
+                raise RuntimeError("Unpaired bibliography bookmark")
+            node.insert(1 if node.pPr is not None else 0, previous)
+            node.append(ending)
         node.getparent().remove(node)
         target._p.addprevious(node)
 

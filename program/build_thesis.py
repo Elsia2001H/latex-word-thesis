@@ -64,6 +64,9 @@ def build_word(tex, reference, output, dpi):
             for page in pdf:
                 raw = page.get_text("rawdict")
                 if not page.get_text().strip():
+                    if len(front_pages) == 3:
+                        front_pages.append({"spans": [], "lines": []})
+                        break # explicit blank immediately after declarations
                     continue # intentional TeX recto/verso blank pages
                 spans = []
                 for block in raw["blocks"]:
@@ -100,7 +103,7 @@ def build_word(tex, reference, output, dpi):
     cmd = [
         find("pandoc"), str(temp_tex), "--from=latex", "--to=docx",
         "--reference-doc", str(reference), "--resource-path", resource_path,
-        "--citeproc", "--bibliography", str(ROOT / "references.bib"),
+        "--citeproc", "-M", "link-citations=true", "--bibliography", str(ROOT / "references.bib"),
         "--csl", str(PACKAGE / "numeric-citation.csl"),
         "--top-level-division=chapter", "-o", str(pandoc_docx),
     ]

@@ -21,5 +21,12 @@ class MarkerTests(unittest.TestCase):
         self.assertEqual(clean_tree(root), 0)
         self.assertEqual(E.tostring(root), before)
 
+    def test_figure_and_table_references(self):
+        for prefix, anchor in [('图','fig:demo'),('表','tbl:demo')]:
+            root=self.tree('<w:p><w:r><w:t>'+prefix+'</w:t></w:r><w:r><w:t>\u00a0</w:t></w:r><w:hyperlink w:anchor="'+anchor+'"><w:r><w:t>2-1</w:t></w:r></w:hyperlink></w:p>')
+            self.assertEqual(clean_tree(root),1)
+            self.assertEqual(clean_tree(root),0)
+            self.assertEqual(root.find('.//w:hyperlink',NS).get('{'+NS['w']+'}anchor'),anchor)
+
 
 if __name__ == '__main__': unittest.main()

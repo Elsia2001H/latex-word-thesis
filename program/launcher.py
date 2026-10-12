@@ -114,7 +114,7 @@ def gui(smoke_test=False):
     from tkinter import ttk, filedialog, messagebox
     from tkinter.scrolledtext import ScrolledText
     root = tk.Tk()
-    root.title('LaTeX 论文转 PDF / Word v1.1')
+    root.title('LaTeX 论文转 PDF / Word v1.2')
     root.geometry('780x550')
     selected = tk.StringVar(value=str(BASE / 'thesis-template.tex'))
     busy = [False]

@@ -23,7 +23,7 @@ def clean_tree(root):
                 node.getparent().remove(node)
     for link in root.xpath('//w:hyperlink[@w:anchor]', namespaces=NS):
         label = ''.join(link.xpath('.//w:t/text()', namespaces=NS))
-        if not re.fullmatch(r'\(\d+[.\-\u2011]\d+\)|\([A-Z][\-\u2011]\d+\)', label):
+        if not re.fullmatch(r'\(\d+[.\-\u2011]\d+\)|\([A-Z][\-\u2011]\d+\)|(?:[图表]\s*)?(?:\d+|[A-Z])[.\-\u2011]\d+', label):
             continue
         parent = link.getparent()
         siblings = list(parent); index = siblings.index(link)

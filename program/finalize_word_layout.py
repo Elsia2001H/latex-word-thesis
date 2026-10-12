@@ -68,6 +68,28 @@ def set_run_superscript(run_element, half_points: str = "24") -> None:
     color.set(qn("w:val"), "000000")
 
 
+def format_linked_citations(paragraph) -> None:
+    """Citeproc splits [1,2] into bracket runs and linked numeric runs."""
+    pending = []; has_reference = False
+    for child in paragraph._p:
+        text = ''.join(node.text or '' for node in child.iter(qn('w:t')))
+        if text == '[':
+            pending = [child]; has_reference = False
+        elif pending:
+            if child.tag == qn('w:hyperlink') and child.get(qn('w:anchor'), '').startswith('ref-'):
+                has_reference = True; pending.append(child)
+            elif child.tag == qn('w:r') and re.fullmatch(r'[\d,，;；\-–—\]\s]+', text):
+                pending.append(child)
+                if text == ']':
+                    if has_reference:
+                        for item in pending:
+                            runs = [item] if item.tag == qn('w:r') else list(item.iter(qn('w:r')))
+                            for run in runs: set_run_superscript(run)
+                    pending = []
+            else:
+                pending = []
+
+
 def fix_equation_reference(paragraph, hyperlink) -> None:
     text_nodes = hyperlink.xpath(".//w:t")
     link_text = "".join(node.text or "" for node in text_nodes).strip()
@@ -396,6 +418,7 @@ def fix_document(path: Path) -> None:
         # hyperlink.  Format only bracketed numeric markers, so the numbered
         # bibliography entries at the end of the thesis remain unchanged.
         if not in_reference_list:
+            format_linked_citations(paragraph)
             for run_element in paragraph._p.xpath(".//w:r"):
                 run_text = "".join(
                     node.text or "" for node in run_element.xpath(".//w:t")
@@ -451,6 +474,8 @@ def format_cached_toc(path: Path) -> None:
         if paragraph.style.style_id != "TOC1":
             continue
         paragraph.style.font.bold = True
+        paragraph.style.font.name = "Times New Roman"
+        paragraph.style.element.get_or_add_rPr().get_or_add_rFonts().set(qn("w:eastAsia"), "SimHei")
         after_tab = False
         for run in paragraph._p.xpath(".//w:r"):
             if run.xpath("./w:tab"):
@@ -459,6 +484,10 @@ def format_cached_toc(path: Path) -> None:
             else:
                 bold_value = "0" if after_tab else "1"
             rpr = run.get_or_add_rPr()
+            fonts = rpr.get_or_add_rFonts()
+            fonts.set(qn("w:eastAsia"), "SimSun" if after_tab and not run.xpath("./w:tab") else "SimHei")
+            fonts.set(qn("w:ascii"), "Times New Roman")
+            fonts.set(qn("w:hAnsi"), "Times New Roman")
             for tag in ("w:b", "w:bCs"):
                 node = rpr.find(qn(tag))
                 if node is None:
