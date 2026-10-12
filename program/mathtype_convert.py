@@ -14,6 +14,7 @@ from zipfile import ZipFile, ZIP_DEFLATED
 from lxml import etree as E
 from docx import Document
 from mathtype_cfb import read_streams, replace_native
+from mathtype_alignment import align_native
 
 NS = {'w':'http://schemas.openxmlformats.org/wordprocessingml/2006/main',
       'm':'http://schemas.openxmlformats.org/officeDocument/2006/math',
@@ -254,7 +255,8 @@ if($p -and $p.ProcessName -eq 'WINWORD' -and $p.StartTime.ToUniversalTime().Tick
                 preview=shape.find('v:imagedata',NS)
                 binary=converted[posixpath.normpath('word/'+br[ole.get('{'+NS['r']+'}id')])]
                 streams,_=read_streams(binary)
-                wmf=formatter.format(streams['Equation Native'],profile,work/('equation-%04d.wmf'%i))
+                native=align_native(streams['Equation Native'],formulas[i]['tex'])
+                wmf=formatter.format(native,profile,work/('equation-%04d.wmf'%i))
                 mtef,width,height=wmf_math(wmf)
                 available=body_width-48 if formulas[i]['display'] else body_width
                 cell=slot.xpath('ancestor::w:tc',namespaces=NS)

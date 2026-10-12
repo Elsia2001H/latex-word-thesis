@@ -1,4 +1,4 @@
-param([Parameter(Mandatory=$true)][string]$Path,[Parameter(Mandatory=$true)][string]$Output)
+param([Parameter(Mandatory=$true)][string]$Path,[Parameter(Mandatory=$true)][string]$Output,[switch]$ShowMarks)
 $ErrorActionPreference='Stop'
 Add-Type -AssemblyName System.Drawing
 New-Item -ItemType Directory -Force -Path $Output | Out-Null
@@ -8,6 +8,7 @@ try {
     $word.Visible=$false;$word.DisplayAlerts=0
     $doc=$word.Documents.Open($Path,$false,$true)
     $doc.ActiveWindow.View.Type=3
+    $doc.ActiveWindow.View.ShowAll=$ShowMarks.IsPresent
     $pages=$doc.ActiveWindow.ActivePane.Pages
     Write-Output ('PAGES '+$pages.Count)
     for($i=1;$i -le $pages.Count;$i++) {

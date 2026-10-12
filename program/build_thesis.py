@@ -169,6 +169,8 @@ def main():
             # Refresh pagination without asking Word to update embedded equations.
             run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", CORE / "update_word_fields.ps1", "-Path", (ROOT / args.word_output).resolve(), "-PageNumbersOnly"])
             run([docx_python, "-c", "from finalize_word_layout import format_cached_toc; from pathlib import Path; import sys; format_cached_toc(Path(sys.argv[1]))", (ROOT / args.word_output).resolve()], cwd=CORE)
+        # Apply after Word saves so Show All exposes no conversion placeholders.
+        run([docx_python, CORE / "clean_equation_markers.py", (ROOT / args.word_output).resolve()])
 
 
 if __name__ == "__main__":
