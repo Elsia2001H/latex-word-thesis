@@ -21,3 +21,6 @@ __pycache__/
 *.xdv
 *.synctex.gz
 ~$*
+qa/
+*.mathtype-work*/
+*.native.docx

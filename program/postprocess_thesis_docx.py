@@ -168,7 +168,7 @@ def strip_pandoc_number(text):
     return re.sub(r"^Section\s+\d+(?:\.\d+)*\s*", "", text.strip(), flags=re.I)
 
 
-def normalize_headings(doc):
+def normalize_headings(doc, chapter_map=None):
     chinese = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]
     special = {
         "学位论文独创性声明": "学位论文独创性声明",
@@ -183,6 +183,8 @@ def normalize_headings(doc):
         if not p.style or not p.style.name.startswith("Heading"):
             continue
         base = strip_pandoc_number(p.text)
+        original_number = re.match(r"^Section\s+(\d+)\s", p.text)
+        mapped = (chapter_map or {}).get(original_number[1]) if original_number else None
         key = normalized(base)
         if p.style.name == "Heading 1":
             section = subsection = 0
@@ -191,8 +193,8 @@ def normalize_headings(doc):
                     if key == normalized(source):
                         p.text = replacement
                         break
-            elif key == normalized("补充材料"):
-                p.text = "附录 A  补充材料"
+            elif mapped and mapped.isalpha():
+                p.text = f"附录 {mapped}  {base}"
             else:
                 chapter += 1
                 label = chinese[chapter - 1] if chapter <= len(chinese) else str(chapter)
@@ -371,14 +373,22 @@ def rebuild_cover_pages(doc):
             heading.paragraph_format.space_after = Pt(24)
 
 
-def replace_visible_numbers(doc):
-    # Pandoc counts the four unnumbered front-matter headings as chapters.
-    # Rewrite every chapter-number token, including math and hyperlink runs.
-    for node in doc._element.body.xpath(".//w:t | .//m:t"):
-        if node.text:
-            node.text = re.sub(r"(?<![\d.])([5-8])\.(\d+)(?![\d.])", lambda m: ("A" if m[1] == "8" else str(int(m[1]) - 4)) + "-" + m[2], node.text)
-            node.text = re.sub(r"Figure ([1-3A]-\d+):?", r"图 \1 ", node.text)
-            node.text = re.sub(r"Table ([1-3A]-\d+):?", r"表 \1 ", node.text)
+def replace_visible_numbers(doc, chapter_map):
+    # Map semantic number slots only; leave decimal constants in prose/math.
+    from thesis_numbering import renumber
+    from docx.text.paragraph import Paragraph
+    for element in doc._element.body.xpath(".//w:p"):
+        paragraph = Paragraph(element, doc)
+        caption = re.match(r"^(Figure|Table)\s+\d+\.\d+", paragraph.text)
+        for node in paragraph._p.xpath(".//w:t"):
+            if not node.text:
+                continue
+            reference = any(parent.tag == qn("w:hyperlink") and parent.get(qn("w:anchor")) for parent in node.iterancestors())
+            equation_number = bool(paragraph._p.xpath(".//m:oMath")) and bool(re.fullmatch(r"\(\d+\.\d+\)", node.text))
+            if caption or reference or equation_number:
+                node.text = renumber(node.text, chapter_map, count=1 if caption else 0)
+                node.text = re.sub(r"Figure ((?:\d+|[A-Z])-\d+):?", r"图 \1 ", node.text)
+                node.text = re.sub(r"Table ((?:\d+|[A-Z])-\d+):?", r"表 \1 ", node.text)
     return
     replacements = (
         ("Figure 5.1:", "图 1-1 "),
@@ -431,12 +441,14 @@ def section_heading_map(doc):
 
 def apply(input_docx: Path, output_docx: Path):
     doc = Document(str(input_docx))
+    from thesis_numbering import chapter_mapping
+    chapter_map = chapter_mapping(doc)
 
     doc.styles["Heading 1"].paragraph_format.page_break_before = True
-    normalize_headings(doc)
+    normalize_headings(doc, chapter_map)
     move_bibliography(doc)
     rebuild_cover_pages(doc)
-    replace_visible_numbers(doc)
+    replace_visible_numbers(doc, chapter_map)
     format_word_tables(doc)
 
     abstract = find_paragraph(doc, ["摘要", "摘 要", "摘  要", "摘　要"], "Heading")

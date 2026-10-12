@@ -111,6 +111,8 @@ def build_word(tex, reference, output, dpi):
         print("NOTE: pandoc-tex-numbering not found; Pandoc native equation handling is used.")
     if numbering:
         cmd[3:3] = ["--filter", numbering, "-M", "number-theorems=false"]
+    if os.environ.get("THESIS_MATH_MANIFEST"):
+        cmd.extend(["--filter", str(CORE / "capture_math.py")])
     run(cmd)
     patch_equation_layout(pandoc_docx, equation_docx)
     docx_python = os.environ.get("DOCX_PYTHON")
@@ -133,9 +135,15 @@ def main():
     parser.add_argument("--dpi", type=int, default=450)
     parser.add_argument("--pdf-only", action="store_true")
     parser.add_argument("--word-only", action="store_true")
+    parser.add_argument("--math-mode", choices=["native", "mathtype"], default="native")
     args = parser.parse_args()
     tex = (ROOT / args.tex).resolve()
     ROOT = tex.parent
+    if args.math_mode == "mathtype" and not args.pdf_only:
+        (ROOT / "._thesis_build").mkdir(exist_ok=True)
+        os.environ["THESIS_MATH_MANIFEST"] = str(ROOT / "._thesis_build" / "math-manifest.json")
+    else:
+        os.environ.pop("THESIS_MATH_MANIFEST", None)
     os.environ["THESIS_TEX"] = str(tex)
     os.environ["THESIS_FRONT_LAYOUT"] = str(ROOT / "._thesis_build" / "front-layout.json")
     os.environ["DOCX_PYTHON"] = sys.executable
@@ -156,6 +164,11 @@ def main():
         run([docx_python, CORE / "finalize_word_layout.py", (ROOT / args.word_output).resolve()])
         run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", CORE / "update_word_fields.ps1", "-Path", (ROOT / args.word_output).resolve()])
         run([docx_python, "-c", "from docx import Document; from docx.oxml.ns import qn; from finalize_word_layout import format_cached_toc; from pathlib import Path; import sys; format_cached_toc(Path(sys.argv[1])); d=Document(sys.argv[1]); u=d.settings.element.find(qn('w:updateFields')); u.set(qn('w:val'),'false') if u is not None else None; d.save(sys.argv[1])", (ROOT / args.word_output).resolve()], cwd=CORE)
+        if args.math_mode == "mathtype":
+            run([docx_python, CORE / "mathtype_convert.py", (ROOT / args.word_output).resolve(), os.environ["THESIS_MATH_MANIFEST"]])
+            # Refresh pagination without asking Word to update embedded equations.
+            run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", CORE / "update_word_fields.ps1", "-Path", (ROOT / args.word_output).resolve(), "-PageNumbersOnly"])
+            run([docx_python, "-c", "from finalize_word_layout import format_cached_toc; from pathlib import Path; import sys; format_cached_toc(Path(sys.argv[1]))", (ROOT / args.word_output).resolve()], cwd=CORE)
 
 
 if __name__ == "__main__":

@@ -5,12 +5,13 @@
 ## 功能
 
 - 原生可编辑封面、中文与英文摘要、目录、章节、参考文献、科研成果和致谢。
-- 原生 Word 公式、按章编号与交叉引用。
+- MathType 可编辑公式与 Word 原生快速预览，按实际章节编号并保留交叉引用。
 - PDF 图片自动转高分辨率 PNG，支持 PNG、JPG 和带居中子图标识的多图排版。
 - 中英文图注和表注、三线表、楷体页眉及横线。
 - Bib 文献按首次引用顺序编号，正文引用为上标。
 - 简单窗口选择根目录内的 TeX，输出文件名附带时间戳，保留历次结果。
 - 修正中英文混排时 Pandoc 首段样式错误覆盖中文字体的问题。
+- 两份公式样式：正文/独立公式 12 磅，表格/图表注公式 10.5 磅；批量转换进度显示。
 
 ## 源码版与便携版的区别
 
@@ -34,11 +35,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\prepare_portable.ps1 `
 
 完成后双击 `启动转换.bat`，选择 `thesis-template.tex` 并开始转换。PDF、DOCX 和日志保存于 `output`。
 
+窗口默认使用 MathType；此模式需要自行安装、授权 MathType，并确保其 Word TeX 转换命令可用。本机验证为 MathType 7.8 与 64 位 API。选择 Word 原生模式可快速预览。详见 `MATHTYPE_GUIDE.md`。
+
 命令行也可运行：
 
 ```powershell
 .\runtime\python.exe .\program\launcher.py --check
 .\runtime\python.exe .\program\launcher.py --convert .\thesis-template.tex
+.\runtime\python.exe .\program\launcher.py --convert .\thesis-template.tex --math-mode mathtype
 ```
 
 ## 目录
@@ -54,12 +58,17 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\prepare_portable.ps1 `
 | `examples/` | 稳定版本的 Word 和 PDF 示例 |
 | `REFERENCE_GUIDE.md` | 文献维护说明 |
 | `THIRD_PARTY.md` | 第三方依赖及许可说明 |
+| `formula-styles/` | 两份自建 MathType 公式样式 |
+| `long-formula-test.tex` | 四章、附录及长公式回归样例 |
+| `MATHTYPE_GUIDE.md` | MathType 环境、长公式处理和测试说明 |
 
 ## 适用范围
 
 适用于本仓库论文模板。保持前置页结构和模板命令，图片放 `figures`，文献放 `references.bib`；复制 TeX 模板后可以改名使用。请使用来源可信的 TeX 文档。
 
 Word 和 TeX 使用各自的排版引擎，分页和换行可能存在差异。修改以 TeX 为主，再重新导出 Word。
+
+章节编号目前读取主 TeX 文件中的 `\chapter` 与 `\appendix`；使用自定义章节宏或拆分章节文件时，需要先展开到主文件。长公式使用 `aligned`、`array`、`cases` 显式分行。超宽或不支持的公式会中止 MathType 替换并保留原生文档，方便检查。
 
 本机 Windows x64、TeX Live 2026、Pandoc 3.11、桌面 Word 16.0 完成测试。包含中文和空格的迁移路径已验证；混排修正版 Word 示例为 20 页，13 个公式对象，8 处公式引用目标全部存在，4 张图片、7 条参考文献。
 

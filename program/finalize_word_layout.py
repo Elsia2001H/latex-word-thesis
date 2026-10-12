@@ -176,7 +176,7 @@ def fix_document(path: Path) -> None:
         for kind, chinese, english in re.findall(r"\\(Figure|Table)Caption\{([^{}]+)\}\{([^{}]+)\}", source_tex.read_text(encoding="utf-8-sig")):
             bilingual[chinese] = (kind, english)
     for paragraph in list(document.paragraphs):
-        match = re.match(r"^([图表])\s*([1-3A][\-‑]\d+)\s*[:：]?\s*(.*)$", paragraph.text)
+        match = re.match(r"^([图表])\s*((?:\d+|[A-Z])[\-‑]\d+)\s*[:：]?\s*(.*)$", paragraph.text)
         if match and match[3].strip() in bilingual:
             kind, english = bilingual[match[3].strip()]
             number = match[2]
@@ -381,7 +381,7 @@ def fix_document(path: Path) -> None:
             snap.set(qn("w:val"), "0")
             paragraph.paragraph_format.keep_together = True
 
-        if re.match(r"^[图表]\s*[1-3A][\-‑]\d+", paragraph.text):
+        if re.match(r"^[图表]\s*(?:\d+|[A-Z])[\-‑]\d+", paragraph.text):
             paragraph.paragraph_format.line_spacing = 1.5
             paragraph.paragraph_format.space_before = Pt(12 if paragraph.text.startswith("表") else 0)
             paragraph.paragraph_format.space_after = Pt(0)

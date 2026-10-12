@@ -1,4 +1,4 @@
-param([Parameter(Mandatory=$true)][string]$Path)
+param([Parameter(Mandatory=$true)][string]$Path, [switch]$PageNumbersOnly)
 $ErrorActionPreference = 'Stop'
 $resolved = (Resolve-Path -LiteralPath $Path).Path
 $word = New-Object -ComObject Word.Application
@@ -7,8 +7,10 @@ $word.DisplayAlerts = 0
 try {
     $document = $word.Documents.Open($resolved, $false, $false)
     $document.Repaginate()
-    $document.Fields.Update() | Out-Null
-    foreach ($toc in $document.TablesOfContents) { $toc.Update() }
+    if (-not $PageNumbersOnly) {
+        $document.Fields.Update() | Out-Null
+        foreach ($toc in $document.TablesOfContents) { $toc.Update() }
+    }
     $document.Repaginate()
     foreach ($section in $document.Sections) {
         foreach ($header in $section.Headers) {
