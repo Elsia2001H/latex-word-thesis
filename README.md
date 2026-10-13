@@ -65,7 +65,7 @@ $env:MATHTYPE_DLL = 'D:\你的MathType目录\MathPage\64\MathPage.wll'
 {"schema_version": 1, "mathtype_location": "D:/你的MathType目录"}
 ```
 
-软件安装和授权由用户完成；程序不安装软件、不修改注册表、不扫描整盘。本次仅为 v1.2 覆盖补丁，泛化配置与新 GUI 继续在独立 2.0 中开发。
+软件安装和授权由用户完成；程序不会安装软件、修改注册表、扫描整盘。本次仅为 v1.2 覆盖补丁，补充了扫描mathtype的功能。
 
 ## 文件目录
 
