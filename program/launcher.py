@@ -12,18 +12,21 @@ import sys
 import threading
 import time
 import traceback
+from mathtype_discovery import configure_conversion, discover
 
 BASE = Path(__file__).resolve().parent.parent
 CORE = BASE / 'program'
 
 
-def environment():
+def environment(math_mode='native'):
     env = os.environ.copy()
     env.pop('PYTHONHOME', None)
     env.pop('PYTHONPATH', None)
     env['PYTHONUTF8'] = '1'
     env['PYTHONIOENCODING'] = 'utf-8'
     env['PATH'] = os.pathsep.join([str(BASE / 'runtime'), str(BASE / 'tools'), env.get('PATH', '')])
+    if math_mode == 'mathtype':
+        env, _ = configure_conversion(env=env)
     return env
 
 
@@ -41,9 +44,8 @@ def check(math_mode='native'):
     if not (BASE / 'tools' / 'pandoc.exe').exists():
         raise RuntimeError('内置 Pandoc 缺失，请重新解压完整发布包。')
     if math_mode == 'mathtype':
-        dll = Path(os.environ.get('MATHTYPE_DLL', str(Path(os.environ.get('ProgramFiles(x86)', r'C:\Program Files (x86)')) / 'MathType/MathPage/64/MathPage.wll')))
-        if not dll.is_file():
-            raise RuntimeError('未找到 MathType 64 位接口。请安装 MathType，或选择 Word 原生公式。')
+        dll = discover().require()
+        return '基础环境检查通过。MathType 接口路径：' + str(dll) + '\n路径已找到；接口加载、授权及 Word 插件可用性由实际转换验证。'
     return 'Python、转换库、Pandoc、TeX Live 命令和 Word 注册检查通过。字体和 TeX 宏包由实际编译进一步验证。'
 
 
@@ -88,7 +90,7 @@ def convert_job(source: Path, emit=print, math_mode='native'):
                '--tex', str(work / source.name), '--word-output', str(work / (label + '.docx')), '--math-mode', math_mode]
     emit('开始转换：' + source.name)
     with log.open('w', encoding='utf-8') as stream:
-        process = subprocess.Popen(command, cwd=BASE, env=environment(), stdout=subprocess.PIPE,
+        process = subprocess.Popen(command, cwd=BASE, env=environment(math_mode), stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT, text=True, encoding='utf-8', errors='replace',
             creationflags=subprocess.CREATE_NO_WINDOW)
         for line in process.stdout:

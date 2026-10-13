@@ -24,3 +24,5 @@ __pycache__/
 qa/
 *.mathtype-work*/
 *.native.docx
+config/environment.json
+config/environment.tmp

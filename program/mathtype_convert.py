@@ -15,6 +15,7 @@ from lxml import etree as E
 from docx import Document
 from mathtype_cfb import read_streams, replace_native
 from mathtype_alignment import align_native
+from mathtype_discovery import discover
 
 NS = {'w':'http://schemas.openxmlformats.org/wordprocessingml/2006/main',
       'm':'http://schemas.openxmlformats.org/officeDocument/2006/math',
@@ -134,10 +135,7 @@ class Formatter:
     class Dims(C.Structure):
         _fields_=[('baseline',C.c_short),('left',C.c_int),('top',C.c_int),('right',C.c_int),('bottom',C.c_int)]
     def __init__(self, folder):
-        candidates=[Path(os.environ.get('MATHTYPE_DLL','')), Path(os.environ.get('ProgramFiles(x86)',r'C:\Program Files (x86)'))/'MathType/MathPage/64/MathPage.wll']
-        dll_path=next((p for p in candidates if p.is_file()),None)
-        if dll_path is None:
-            raise RuntimeError('MathType 64-bit API not found; install MathType or choose native equations')
+        dll_path=discover().require()
         self.dll=C.WinDLL(str(dll_path)); d=self.dll
         d.MTInitAPI.argtypes=[C.c_short,C.c_short]
         d.MTGetPrefsFromFile.argtypes=[C.c_char_p,C.c_void_p,C.c_short]

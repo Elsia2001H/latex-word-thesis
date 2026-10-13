@@ -14,6 +14,7 @@
 - 两份公式样式：正文/独立公式 12 磅，表格/图表注公式 10.5 磅；批量转换进度显示。
 - 支持单组 `aligned` 多行公式的关系符号对齐，清理公式和图表引用旁的多余编辑标记。
 - v1.2：目录一级条目使用四号（14 磅）黑体，其余级别使用小四（12 磅）；正文标题使用黑体。声明与授权书同页、后接空白页；正文上标文献引用可跳转到末尾对应文献。
+- v1.2 路径发现补丁：通过注册信息和常见安装目录寻找 MathType 接口，支持非默认路径；环境检查与公式转换共用发现逻辑。
 
 ## 源码版与便携版的区别
 
@@ -47,7 +48,26 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\prepare_portable.ps1 `
 .\runtime\python.exe .\program\launcher.py --convert .\thesis-template.tex --math-mode mathtype
 ```
 
-## 目录
+## MathType 路径与兼容范围
+
+当前实测环境为 Windows x64、桌面 Word 16.0 与 MathType 7.8 的 64 位公式 API。其他 MathType 7.x 版本尚未全面验证。找到 `MathPage.wll` 只说明接口文件存在，仍需实际转换验证接口加载、授权与 Word 插件。
+
+发现顺序为 `MATHTYPE_DLL` 环境变量、已保存路径、注册信息和常见目录；多个候选要求明确选择。指定路径失效时会提示修正，不自动切换到另一个版本。可在启动前临时指定完整接口路径：
+
+```powershell
+$env:MATHTYPE_DLL = 'D:\你的MathType目录\MathPage\64\MathPage.wll'
+.\runtime\python.exe .\program\launcher.py --check --math-mode mathtype
+```
+
+也可在根目录 `config/environment.json` 保存安装目录或完整接口路径：
+
+```json
+{"schema_version": 1, "mathtype_location": "D:/你的MathType目录"}
+```
+
+软件安装和授权由用户完成；程序不安装软件、不修改注册表、不扫描整盘。本次仅为 v1.2 覆盖补丁，泛化配置与新 GUI 继续在独立 2.0 中开发。
+
+## 文件目录
 
 | 路径 | 内容 |
 | --- | --- |

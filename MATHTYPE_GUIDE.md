@@ -6,6 +6,8 @@
 
 Windows x64、桌面 Microsoft Word、完整 TeX Live。MathType 模式另外需要用户自行安装并授权的 MathType，且 Word 中可用 MathType 的 TeX 转换命令。当前验证环境为 Word 16 与 MathType 7.8、64 位公式 API。Python 和 Pandoc 使用本地运行环境。
 
+v1.2 的路径发现补丁通过只读注册信息、常见目录与手动设置寻找接口，环境检查与公式转换共用同一逻辑。找到接口文件不代表版本兼容、授权或 Word 插件已验证；其他 MathType 7.x 尚未全面验证。手动位置的设置方式见 README。
+
 ## 两份样式
 
 - `formula-styles/body.eqp`：正文和独立公式，12 磅、Times New Roman。
